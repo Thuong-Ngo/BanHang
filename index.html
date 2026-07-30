@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Vật Liệu Tổng Hợp Minh Long - Quản lý Nhập Xuất</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.16.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore-compat.js"></script>
 <style>
 :root{--blue:#1688d8;--blue2:#0b5fa8;--light:#eef8ff;--dark:#12344d;--green:#159957;--red:#e34b4b;--orange:#f39c12;--border:#d7e6f2}
 *{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;background:linear-gradient(135deg,#dff3ff,#f8fcff);color:#18364b}
@@ -29,7 +31,7 @@ footer{text-align:center;color:#7793a5;padding:20px}
 </style>
 </head>
 <body>
-<header><div class="header"><div class="brand"><h1>VẬT LIỆU TỔNG HỢP MINH LONG</h1><p>Hệ thống quản lý Nhập – Xuất – Tồn kho</p></div><div>📦 Quản lý cửa hàng</div></div></header>
+<header><div class="header"><div class="brand"><h1>VẬT LIỆU TỔNG HỢP MINH LONG</h1><p>Hệ thống quản lý Nhập – Xuất – Tồn kho</p></div><div id="syncStatus" style="font-size:13px;background:#ffffff26;padding:8px 12px;border-radius:20px">🔄 Đang kết nối Firebase...</div></div></header>
 <nav><div class="nav">
 <button class="tab active" data-tab="order">1. LÊN ĐƠN HÀNG</button>
 <button class="tab" data-tab="orders">2. QUẢN LÝ ĐƠN HÀNG</button>
@@ -86,15 +88,56 @@ footer{text-align:center;color:#7793a5;padding:20px}
 </section>
 </main>
 <div id="printArea" class="print-area" style="display:none"></div>
-<footer>Dữ liệu được lưu trực tiếp trên trình duyệt của thiết bị này.</footer>
+<footer>Dữ liệu được đồng bộ trực tiếp qua Firebase — dùng chung được trên nhiều thiết bị.</footer>
 
 <script>
-const KEY='minhlong_inventory_v1';
-let db=JSON.parse(localStorage.getItem(KEY)||'{"orders":[],"imports":[]}');
+// ===== Firebase =====
+const firebaseConfig = {
+  apiKey: "AIzaSyAFZ8n6py8u9-0thNq6bqXCSKH-TWdhYR8",
+  authDomain: "banhang-64c4e.firebaseapp.com",
+  projectId: "banhang-64c4e",
+  storageBucket: "banhang-64c4e.firebasestorage.app",
+  messagingSenderId: "424498297938",
+  appId: "1:424498297938:web:565cfc9b23e5aebc9a738b"
+};
+const fbApp = firebase.initializeApp(firebaseConfig);
+const fsdb = fbApp.firestore();
+const DATA_REF = fsdb.collection('minhlong').doc('inventory'); // 1 document chứa toàn bộ dữ liệu cửa hàng
+
+let db={orders:[],imports:[]};
 let cart=[], editingImport=null, charts={};
+let firebaseReady=false, saving=false;
 const fmt=n=>new Intl.NumberFormat('vi-VN',{style:'currency',currency:'VND',maximumFractionDigits:0}).format(Number(n)||0);
 const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
-function save(){localStorage.setItem(KEY,JSON.stringify(db));}
+function setSyncStatus(text,color){const el=document.getElementById('syncStatus');if(el){el.textContent=text;el.style.background=color||'#ffffff26';}}
+
+function save(){
+  saving=true;
+  setSyncStatus('💾 Đang lưu...','#ffe9a8');
+  DATA_REF.set(db)
+    .then(()=>setSyncStatus('✅ Đã đồng bộ','#c9f7d8'))
+    .catch(err=>{console.error('Lỗi lưu Firebase:',err);setSyncStatus('⚠️ Lỗi lưu dữ liệu','#ffd0d0');alert('Không thể lưu dữ liệu lên Firebase. Kiểm tra kết nối mạng hoặc quy tắc bảo mật Firestore.');})
+    .finally(()=>{saving=false;});
+}
+
+// Lắng nghe dữ liệu realtime — mọi thay đổi từ thiết bị khác sẽ tự cập nhật ở đây
+DATA_REF.onSnapshot(doc=>{
+  if(doc.exists){
+    const data=doc.data()||{};
+    db.orders=Array.isArray(data.orders)?data.orders:[];
+    db.imports=Array.isArray(data.imports)?data.imports:[];
+  } else {
+    db={orders:[],imports:[]};
+    DATA_REF.set(db).catch(err=>console.error('Lỗi khởi tạo dữ liệu:',err));
+  }
+  firebaseReady=true;
+  if(!saving)setSyncStatus('✅ Đã đồng bộ','#c9f7d8');
+  renderAll();
+},err=>{
+  console.error('Lỗi kết nối Firebase:',err);
+  setSyncStatus('⚠️ Mất kết nối Firebase','#ffd0d0');
+});
+
 function today(){return new Date().toISOString().slice(0,10)}
 document.getElementById('oDate').value=today();document.getElementById('nDate').value=today();
 
