@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vật Liệu Tổng Hợp Minh Long - Quản lý Nhập Xuất</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+:root{--blue:#1688d8;--blue2:#0b5fa8;--light:#eef8ff;--dark:#12344d;--green:#159957;--red:#e34b4b;--orange:#f39c12;--border:#d7e6f2}
+*{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;background:linear-gradient(135deg,#dff3ff,#f8fcff);color:#18364b}
+header{background:linear-gradient(135deg,#0878c9,#35a9ec);color:white;padding:22px 16px;box-shadow:0 4px 15px #0b5fa833}
+.header{max-width:1400px;margin:auto;display:flex;justify-content:space-between;align-items:center;gap:15px}.brand h1{margin:0;font-size:25px}.brand p{margin:6px 0 0;opacity:.9}
+nav{background:#fff;position:sticky;top:0;z-index:10;box-shadow:0 2px 10px #12344d14}.nav{max-width:1400px;margin:auto;display:flex;gap:6px;overflow:auto;padding:8px}.tab{border:0;background:#eef7fd;color:#175071;padding:12px 16px;border-radius:9px;font-weight:700;cursor:pointer;white-space:nowrap}.tab.active{background:var(--blue);color:white}
+main{max-width:1400px;margin:20px auto;padding:0 14px}.section{display:none}.section.active{display:block}
+.card{background:white;border:1px solid var(--border);border-radius:14px;padding:18px;margin-bottom:18px;box-shadow:0 5px 18px #12344d0c}.card h2{margin:0 0 16px;color:var(--blue2)}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.field label{display:block;font-size:13px;font-weight:700;margin-bottom:5px}.field input,.field select,.field textarea{width:100%;padding:10px;border:1px solid #cbddea;border-radius:8px;font-size:14px;background:#fff}.field textarea{resize:vertical;min-height:40px}
+table{width:100%;border-collapse:collapse;min-width:780px}th,td{padding:10px 9px;border-bottom:1px solid #e5eef5;text-align:left;font-size:14px}th{background:#edf7fd;color:#14587d;position:sticky;top:0}td.num{text-align:right}.table-wrap{overflow:auto;border:1px solid var(--border);border-radius:10px}
+.btn{border:0;border-radius:8px;padding:10px 14px;font-weight:700;cursor:pointer}.primary{background:var(--blue);color:white}.success{background:var(--green);color:white}.danger{background:var(--red);color:white}.warning{background:var(--orange);color:white}.muted{background:#edf2f5;color:#456}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.total{display:flex;justify-content:flex-end;align-items:center;gap:20px;padding:14px;background:#f4fbff;border-radius:9px;margin-top:10px;font-size:18px}.money{font-weight:800;color:var(--blue2)}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.stat{padding:16px;border-radius:12px;background:linear-gradient(135deg,#f3fbff,#fff);border:1px solid var(--border)}.stat span{display:block;color:#66869a;font-size:13px}.stat b{font-size:22px;display:block;margin-top:5px}
+.filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}.filters>*{padding:9px;border:1px solid #cbddea;border-radius:8px}
+.chartbox{height:340px}.empty{text-align:center;color:#7992a1;padding:25px}
+.badge{padding:5px 8px;border-radius:20px;font-size:12px;font-weight:700}.delivered{background:#e5f8ee;color:#11864b}.pending{background:#fff2d9;color:#a46600}
+.invoice{max-width:800px;margin:auto}.invoice h2{text-align:center;color:#111}.invoice-head{text-align:center;margin-bottom:18px}.invoice-table{width:100%;min-width:0}.invoice-table th{position:static}.right{text-align:right}
+footer{text-align:center;color:#7793a5;padding:20px}
+@media(max-width:800px){.header{display:block}.brand h1{font-size:21px}.grid{grid-template-columns:repeat(2,1fr)}.stats{grid-template-columns:repeat(2,1fr)}main{padding:0 8px}.card{padding:13px}.chartbox{height:280px}}
+@media(max-width:500px){.grid{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr}.tab{padding:10px 12px;font-size:13px}.total{font-size:15px}}
+@media print{body{background:white}.no-print,header,nav,footer{display:none!important}.section{display:none}.print-area{display:block!important}.invoice{max-width:none}}
+</style>
+</head>
+<body>
+<header><div class="header"><div class="brand"><h1>VẬT LIỆU TỔNG HỢP MINH LONG</h1><p>Hệ thống quản lý Nhập – Xuất – Tồn kho</p></div><div>📦 Quản lý cửa hàng</div></div></header>
+<nav><div class="nav">
+<button class="tab active" data-tab="order">1. LÊN ĐƠN HÀNG</button>
+<button class="tab" data-tab="orders">2. QUẢN LÝ ĐƠN HÀNG</button>
+<button class="tab" data-tab="imports">3. QUẢN LÝ NHẬP HÀNG</button>
+<button class="tab" data-tab="stock">4. QUẢN LÝ TỒN KHO</button>
+</div></nav>
+
+<main>
+<section id="order" class="section active">
+<div class="card"><h2>🧾 Lên đơn hàng</h2>
+<div class="grid">
+<div class="field"><label>Ngày</label><input type="date" id="oDate"></div>
+<div class="field"><label>Người mua</label><input id="oBuyer" placeholder="Tên người mua"></div>
+<div class="field"><label>Thông tin</label><input id="oInfo" placeholder="SĐT / địa chỉ / thông tin"></div>
+<div class="field"><label>Ghi chú đơn hàng</label><input id="oNote" placeholder="Ghi chú"></div>
+</div>
+<hr style="border:0;border-top:1px solid #e5eef5;margin:18px 0">
+<div class="grid">
+<div class="field"><label>Thông tin hàng</label><input id="iName" placeholder="Tên / loại hàng"></div>
+<div class="field"><label>Loại</label><input id="iType" placeholder="Loại hàng"></div>
+<div class="field"><label>Đơn giá</label><input id="iPrice" type="number" min="0" placeholder="0"></div>
+<div class="field"><label>Số lượng</label><input id="iQty" type="number" min="0.01" step="0.01" placeholder="0"></div>
+</div>
+<div class="field" style="margin-top:12px"><label>Ghi chú dòng hàng</label><input id="iNote" placeholder="Ghi chú"></div>
+<div class="actions"><button class="btn primary" onclick="addItem()">＋ Thêm vào đơn</button><button class="btn muted" onclick="clearItem()">Xóa ô nhập</button></div>
+<div class="table-wrap" style="margin-top:15px"><table><thead><tr><th>#</th><th>Thông tin</th><th>Loại</th><th>Đơn giá</th><th>Số lượng</th><th>Thành tiền</th><th>Ghi chú</th><th></th></tr></thead><tbody id="cartBody"></tbody></table></div>
+<div class="total"><span>Tổng đơn hàng:</span><span class="money" id="cartTotal">0 ₫</span></div>
+<div class="actions"><button class="btn success" onclick="completeOrder()">✓ Hoàn tất đơn hàng</button></div>
+</div></section>
+
+<section id="orders" class="section">
+<div class="card"><h2>📋 Quản lý đơn hàng</h2><div class="stats" id="orderStats"></div></div>
+<div class="card"><h2>Danh sách đơn hàng</h2><div class="filters"><select id="orderYear" onchange="renderOrders()"></select><select id="orderMonth" onchange="renderOrders()"><option value="">Tất cả tháng</option><option value="1">Tháng 1</option><option value="2">Tháng 2</option><option value="3">Tháng 3</option><option value="4">Tháng 4</option><option value="5">Tháng 5</option><option value="6">Tháng 6</option><option value="7">Tháng 7</option><option value="8">Tháng 8</option><option value="9">Tháng 9</option><option value="10">Tháng 10</option><option value="11">Tháng 11</option><option value="12">Tháng 12</option></select></div>
+<div class="table-wrap"><table><thead><tr><th>Ngày</th><th>Người mua</th><th>Thông tin</th><th>Số mặt hàng</th><th>Tổng tiền</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody id="ordersBody"></tbody></table></div></div>
+<div class="card"><h2>📈 Tổng hợp doanh thu</h2><div class="chartbox"><canvas id="salesChart"></canvas></div></div>
+</section>
+
+<section id="imports" class="section">
+<div class="card"><h2>📥 Quản lý nhập hàng</h2>
+<div class="grid">
+<div class="field"><label>Ngày</label><input type="date" id="nDate"></div><div class="field"><label>Đơn vị</label><input id="nSupplier" placeholder="Nhà cung cấp"></div><div class="field"><label>Loại hàng</label><input id="nType" placeholder="Loại hàng"></div><div class="field"><label>Đơn giá</label><input id="nPrice" type="number" min="0" placeholder="0"></div><div class="field"><label>Số lượng</label><input id="nQty" type="number" min="0.01" step="0.01" placeholder="0"></div><div class="field"><label>Thành tiền</label><input id="nTotal" type="number" min="0" placeholder="Tự tính nếu để trống"></div><div class="field"><label>Ghi chú</label><input id="nNote" placeholder="Ghi chú"></div>
+</div><div class="actions"><button class="btn primary" onclick="saveImport()">＋ Thêm nhập hàng</button><button class="btn muted" onclick="clearImport()">Xóa ô nhập</button></div>
+</div>
+<div class="card"><h2>Danh sách nhập hàng & giá cost</h2><div class="filters"><select id="importYear" onchange="renderImports()"></select><select id="importMonth" onchange="renderImports()"><option value="">Tất cả tháng</option><option value="1">Tháng 1</option><option value="2">Tháng 2</option><option value="3">Tháng 3</option><option value="4">Tháng 4</option><option value="5">Tháng 5</option><option value="6">Tháng 6</option><option value="7">Tháng 7</option><option value="8">Tháng 8</option><option value="9">Tháng 9</option><option value="10">Tháng 10</option><option value="11">Tháng 11</option><option value="12">Tháng 12</option></select></div>
+<div class="table-wrap"><table><thead><tr><th>Ngày</th><th>Đơn vị</th><th>Loại hàng</th><th>Đơn giá</th><th>Số lượng</th><th>Thành tiền</th><th>Giá cost</th><th>Ghi chú</th><th>Thao tác</th></tr></thead><tbody id="importsBody"></tbody></table></div>
+<div class="total"><span>Tổng nhập:</span><span class="money" id="importTotal">0 ₫</span></div></div>
+<div class="card"><h2>📊 Tổng hợp nhập hàng theo tháng</h2><div class="chartbox"><canvas id="importChart"></canvas></div></div>
+</section>
+
+<section id="stock" class="section">
+<div class="card"><h2>📦 Quản lý tồn kho</h2><div class="stats" id="stockStats"></div></div>
+<div class="card"><h2>Tồn kho theo loại hàng</h2><div class="table-wrap"><table><thead><tr><th>Loại hàng</th><th>Số lượng nhập</th><th>Số lượng đã bán</th><th>Số lượng còn lại</th><th>Doanh thu</th><th>Giá trị nhập</th><th>Lợi nhuận gộp</th></tr></thead><tbody id="stockBody"></tbody></table></div></div>
+<div class="card"><h2>🔥 Hàng bán chạy nhất</h2><div class="chartbox"><canvas id="stockChart"></canvas></div></div>
+</section>
+</main>
+<div id="printArea" class="print-area" style="display:none"></div>
+<footer>Dữ liệu được lưu trực tiếp trên trình duyệt của thiết bị này.</footer>
+
+<script>
+const KEY='minhlong_inventory_v1';
+let db=JSON.parse(localStorage.getItem(KEY)||'{"orders":[],"imports":[]}');
+let cart=[], editingImport=null, charts={};
+const fmt=n=>new Intl.NumberFormat('vi-VN',{style:'currency',currency:'VND',maximumFractionDigits:0}).format(Number(n)||0);
+const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+function save(){localStorage.setItem(KEY,JSON.stringify(db));}
+function today(){return new Date().toISOString().slice(0,10)}
+document.getElementById('oDate').value=today();document.getElementById('nDate').value=today();
+
+document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.getElementById(b.dataset.tab).classList.add('active');renderAll()});
+
+function addItem(){
+ let name=iName.value.trim(), type=iType.value.trim(), price=+iPrice.value, qty=+iQty.value;
+ if(!name||!type||price<0||qty<=0)return alert('Vui lòng nhập đủ thông tin hàng, loại, đơn giá và số lượng.');
+ cart.push({name,type,price,qty,total:price*qty,note:iNote.value.trim()}); renderCart();clearItem();
+}
+function clearItem(){iName.value=iType.value=iPrice.value=iQty.value=iNote.value=''}
+function renderCart(){cartBody.innerHTML=cart.length?cart.map((x,i)=>`<tr><td>${i+1}</td><td>${esc(x.name)}</td><td>${esc(x.type)}</td><td class="num">${fmt(x.price)}</td><td class="num">${x.qty}</td><td class="num">${fmt(x.total)}</td><td>${esc(x.note)}</td><td><button class="btn danger" onclick="cart.splice(${i},1);renderCart()">Xóa</button></td></tr>`).join(''):'<tr><td colspan="8" class="empty">Chưa có mặt hàng trong đơn.</td></tr>';cartTotal.textContent=fmt(cart.reduce((s,x)=>s+x.total,0))}
+function completeOrder(){
+ if(!cart.length)return alert('Đơn hàng chưa có mặt hàng.');
+ if(!oBuyer.value.trim())return alert('Vui lòng nhập Người mua.');
+ db.orders.push({id:Date.now(),date:oDate.value,buyer:oBuyer.value.trim(),info:oInfo.value.trim(),note:oNote.value.trim(),items:cart.map(x=>({...x})),total:cart.reduce((s,x)=>s+x.total,0),delivered:false});
+ save();alert('Đã hoàn tất đơn hàng.');cart=[];renderCart();oBuyer.value=oInfo.value=oNote.value='';renderAll();
+}
+function years(){let ys=new Set([new Date().getFullYear()]);db.orders.forEach(x=>ys.add(+x.date.slice(0,4)));db.imports.forEach(x=>ys.add(+x.date.slice(0,4)));return [...ys].sort((a,b)=>b-a)}
+function fillYears(){let opts=years().map(y=>`<option>${y}</option>`).join('');['orderYear','importYear'].forEach(id=>{let el=document.getElementById(id),old=el.value;el.innerHTML=opts;el.value=opts.includes(`>${old}<`)?old:years()[0]})}
+function filtered(arr,yId,mId){let y=+document.getElementById(yId).value,m=document.getElementById(mId).value;return arr.filter(x=>(!y||+x.date.slice(0,4)===y)&&(!m||+x.date.slice(5,7)===+m))}
+function renderOrders(){
+ let arr=filtered(db.orders,'orderYear','orderMonth'), body=ordersBody;
+ body.innerHTML=arr.length?arr.slice().reverse().map(o=>`<tr><td>${o.date}</td><td>${esc(o.buyer)}</td><td>${esc(o.info)}</td><td>${o.items.length}</td><td class="num money">${fmt(o.total)}</td><td><span class="badge ${o.delivered?'delivered':'pending'}">${o.delivered?'Đã giao':'Chưa giao'}</span></td><td><div class="actions"><button class="btn success" onclick="toggleDelivered(${o.id})">${o.delivered?'Chưa giao':'Đã giao'}</button><button class="btn muted" onclick="viewInvoice(${o.id})">Xem phiếu</button><button class="btn warning" onclick="printInvoice(${o.id})">In phiếu</button><button class="btn danger" onclick="deleteOrder(${o.id})">Xóa</button></div></td></tr>`).join(''):'<tr><td colspan="7" class="empty">Chưa có đơn hàng.</td></tr>';
+ let total=arr.reduce((s,x)=>s+x.total,0), delivered=arr.filter(x=>x.delivered).length;
+ orderStats.innerHTML=`<div class="stat"><span>Số đơn</span><b>${arr.length}</b></div><div class="stat"><span>Doanh thu</span><b>${fmt(total)}</b></div><div class="stat"><span>Đã giao</span><b>${delivered}</b></div><div class="stat"><span>Chưa giao</span><b>${arr.length-delivered}</b></div>`;
+ renderSalesChart();
+}
+function toggleDelivered(id){let o=db.orders.find(x=>x.id===id);if(o)o.delivered=!o.delivered;save();renderAll()}
+function deleteOrder(id){if(confirm('Xóa đơn hàng này?')){db.orders=db.orders.filter(x=>x.id!==id);save();renderAll()}}
+function viewInvoice(id){let o=db.orders.find(x=>x.id===id);if(!o)return;let w=window.open('','_blank');w.document.write(invoiceHTML(o));w.document.close()}
+function printInvoice(id){let o=db.orders.find(x=>x.id===id);if(!o)return;let w=window.open('','_blank');w.document.write(invoiceHTML(o));w.document.close();w.onload=()=>w.print()}
+function invoiceHTML(o){return `<!doctype html><html lang="vi"><head><meta charset="utf-8"><title>Phiếu ${o.id}</title><style>body{font-family:Arial;padding:30px;color:#222}.invoice{max-width:800px;margin:auto}h1,h2{text-align:center}table{width:100%;border-collapse:collapse}th,td{border:1px solid #aaa;padding:8px}th{background:#eee}.right{text-align:right}.foot{margin-top:30px;display:flex;justify-content:space-between;text-align:center}</style></head><body><div class="invoice"><h2>VẬT LIỆU TỔNG HỢP MINH LONG</h2><h1>PHIẾU ĐƠN HÀNG</h1><p><b>Ngày:</b> ${esc(o.date)} &nbsp; <b>Người mua:</b> ${esc(o.buyer)}</p><p><b>Thông tin:</b> ${esc(o.info)}</p><table><tr><th>STT</th><th>Thông tin</th><th>Loại</th><th>Đơn giá</th><th>SL</th><th>Thành tiền</th><th>Ghi chú</th></tr>${o.items.map((x,i)=>`<tr><td>${i+1}</td><td>${esc(x.name)}</td><td>${esc(x.type)}</td><td class="right">${fmt(x.price)}</td><td>${x.qty}</td><td class="right">${fmt(x.total)}</td><td>${esc(x.note)}</td></tr>`).join('')}<tr><th colspan="5" class="right">TỔNG CỘNG</th><th class="right">${fmt(o.total)}</th><th></th></tr></table><p><b>Ghi chú:</b> ${esc(o.note)}</p><div class="foot"><div>Người mua<br><br><br>________________</div><div>VẬT LIỆU TỔNG HỢP MINH LONG<br><br><br>________________</div></div></div></body></html>`}
+
+function saveImport(){
+ let date=nDate.value,supplier=nSupplier.value.trim(),type=nType.value.trim(),qty=+nQty.value,price=+nPrice.value,total=nTotal.value===''?price*qty:+nTotal.value;
+ if(!date||!type||qty<=0||total<0)return alert('Vui lòng nhập Ngày, Loại hàng, Số lượng và Thành tiền hợp lệ.');
+ let obj={id:editingImport||Date.now(),date,supplier,type,price:price||total/qty,qty,total,note:nNote.value.trim()};
+ if(editingImport)db.imports=db.imports.map(x=>x.id===editingImport?obj:x);else db.imports.push(obj);
+ save();editingImport=null;clearImport();renderAll();
+}
+function clearImport(){nDate.value=today();nSupplier.value=nType.value=nPrice.value=nQty.value=nTotal.value=nNote.value='';editingImport=null}
+function editImport(id){let x=db.imports.find(a=>a.id===id);if(!x)return;nDate.value=x.date;nSupplier.value=x.supplier;nType.value=x.type;nPrice.value=x.price;nQty.value=x.qty;nTotal.value=x.total;nNote.value=x.note;editingImport=id;document.querySelector('[data-tab="imports"]').click();window.scrollTo({top:0,behavior:'smooth'})}
+function deleteImport(id){if(confirm('Xóa phiếu nhập này?')){db.imports=db.imports.filter(x=>x.id!==id);save();renderAll()}}
+function renderImports(){
+ let arr=filtered(db.imports,'importYear','importMonth');
+ importsBody.innerHTML=arr.length?arr.slice().reverse().map(x=>`<tr><td>${x.date}</td><td>${esc(x.supplier)}</td><td>${esc(x.type)}</td><td class="num">${fmt(x.price)}</td><td class="num">${x.qty}</td><td class="num">${fmt(x.total)}</td><td class="num money">${fmt(x.qty?x.total/x.qty:0)}</td><td>${esc(x.note)}</td><td><div class="actions"><button class="btn warning" onclick="editImport(${x.id})">Sửa</button><button class="btn danger" onclick="deleteImport(${x.id})">Xóa</button></div></td></tr>`).join(''):'<tr><td colspan="9" class="empty">Chưa có dữ liệu nhập hàng.</td></tr>';
+ importTotal.textContent=fmt(arr.reduce((s,x)=>s+x.total,0));renderImportChart();
+}
+function getStock(){
+ let map={};
+ db.imports.forEach(x=>{let k=x.type||'Khác';map[k]??={inQty:0,soldQty:0,revenue:0,importValue:0};map[k].inQty+=+x.qty;map[k].importValue+=+x.total});
+ db.orders.forEach(o=>o.items.forEach(x=>{let k=x.type||'Khác';map[k]??={inQty:0,soldQty:0,revenue:0,importValue:0};map[k].soldQty+=+x.qty;map[k].revenue+=+x.total}));
+ return map;
+}
+function renderStock(){
+ let m=getStock(),keys=Object.keys(m),totalIn=0,totalSold=0,revenue=0,cost=0;
+ stockBody.innerHTML=keys.length?keys.map(k=>{let x=m[k],stock=x.inQty-x.soldQty,profit=x.revenue-x.importValue;totalIn+=x.inQty;totalSold+=x.soldQty;revenue+=x.revenue;cost+=x.importValue;return `<tr><td><b>${esc(k)}</b></td><td class="num">${x.inQty}</td><td class="num">${x.soldQty}</td><td class="num ${stock<0?'money':''}">${stock}</td><td class="num">${fmt(x.revenue)}</td><td class="num">${fmt(x.importValue)}</td><td class="num money">${fmt(profit)}</td></tr>`}).join(''):'<tr><td colspan="7" class="empty">Chưa có dữ liệu tồn kho.</td></tr>';
+ stockStats.innerHTML=`<div class="stat"><span>Tổng nhập</span><b>${totalIn}</b></div><div class="stat"><span>Tổng bán</span><b>${totalSold}</b></div><div class="stat"><span>Doanh thu</span><b>${fmt(revenue)}</b></div><div class="stat"><span>Lợi nhuận gộp</span><b>${fmt(revenue-cost)}</b></div>`;
+ if(charts.stock)charts.stock.destroy();if(keys.length)charts.stock=new Chart(stockChart,{type:'bar',data:{labels:keys,datasets:[{label:'Số lượng bán',data:keys.map(k=>m[k].soldQty)}]},options:{responsive:true,maintainAspectRatio:false}});
+}
+function renderSalesChart(){
+ let y=+orderYear.value,labels=Array.from({length:12},(_,i)=>'T'+(i+1)),data=labels.map((_,i)=>db.orders.filter(o=>+o.date.slice(0,4)===y&&+o.date.slice(5,7)===i+1).reduce((s,o)=>s+o.total,0));
+ if(charts.sales)charts.sales.destroy();charts.sales=new Chart(salesChart,{type:'line',data:{labels,datasets:[{label:'Doanh thu',data,fill:true,tension:.3}]},options:{responsive:true,maintainAspectRatio:false}});
+}
+function renderImportChart(){
+ let y=+importYear.value,labels=Array.from({length:12},(_,i)=>'T'+(i+1)),data=labels.map((_,i)=>db.imports.filter(o=>+o.date.slice(0,4)===y&&+o.date.slice(5,7)===i+1).reduce((s,o)=>s+o.total,0));
+ if(charts.imports)charts.imports.destroy();charts.imports=new Chart(importChart,{type:'bar',data:{labels,datasets:[{label:'Tổng tiền nhập',data}]},options:{responsive:true,maintainAspectRatio:false}});
+}
+function renderAll(){fillYears();renderCart();renderOrders();renderImports();renderStock()}
+renderAll();
+</script>
+</body>
+</html>
