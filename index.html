@@ -31,7 +31,7 @@ footer{text-align:center;color:#7793a5;padding:20px}
 </style>
 </head>
 <body>
-<header><div class="header"><div class="brand"><h1>VẬT LIỆU TỔNG HỢP MINH LONG</h1><p>Hệ thống quản lý Nhập – Xuất – Tồn kho</p></div><div id="syncStatus" style="font-size:13px;background:#ffffff26;padding:8px 12px;border-radius:20px">🔄 Đang kết nối Firebase...</div></div></header>
+<header><div class="header"><div class="brand"><h1 id="storeName" style="display:inline-block">VẬT LIỆU TỔNG HỢP MINH LONG</h1><button class="btn muted" id="editStoreNameBtn" title="Đổi tên cửa hàng" style="margin-left:8px;padding:5px 9px;font-size:13px;vertical-align:middle">✎</button><p>Hệ thống quản lý Nhập – Xuất – Tồn kho</p></div><div id="syncStatus" style="font-size:13px;background:#ffffff26;padding:8px 12px;border-radius:20px">🔄 Đang kết nối Firebase...</div></div></header>
 <nav><div class="nav">
 <button class="tab active" data-tab="order">1. LÊN ĐƠN HÀNG</button>
 <button class="tab" data-tab="orders">2. QUẢN LÝ ĐƠN HÀNG</button>
@@ -50,14 +50,13 @@ footer{text-align:center;color:#7793a5;padding:20px}
 </div>
 <hr style="border:0;border-top:1px solid #e5eef5;margin:18px 0">
 <div class="grid">
-<div class="field"><label>Thông tin hàng</label><input id="iName" placeholder="Tên / loại hàng"></div>
-<div class="field"><label>Loại</label><input id="iType" placeholder="Loại hàng"></div>
+<div class="field"><label>Loại hàng</label><select id="iType" onchange="onItemTypeChange()"><option value="">-- Chọn loại hàng --</option></select></div>
 <div class="field"><label>Đơn giá</label><input id="iPrice" type="number" min="0" placeholder="0"></div>
 <div class="field"><label>Số lượng</label><input id="iQty" type="number" min="0.01" step="0.01" placeholder="0"></div>
 </div>
 <div class="field" style="margin-top:12px"><label>Ghi chú dòng hàng</label><input id="iNote" placeholder="Ghi chú"></div>
 <div class="actions"><button class="btn primary" onclick="addItem()">＋ Thêm vào đơn</button><button class="btn muted" onclick="clearItem()">Xóa ô nhập</button></div>
-<div class="table-wrap" style="margin-top:15px"><table><thead><tr><th>#</th><th>Thông tin</th><th>Loại</th><th>Đơn giá</th><th>Số lượng</th><th>Thành tiền</th><th>Ghi chú</th><th></th></tr></thead><tbody id="cartBody"></tbody></table></div>
+<div class="table-wrap" style="margin-top:15px"><table><thead><tr><th>#</th><th>Loại hàng</th><th>Đơn giá</th><th>Số lượng</th><th>Thành tiền</th><th>Ghi chú</th><th></th></tr></thead><tbody id="cartBody"></tbody></table></div>
 <div class="total"><span>Tổng đơn hàng:</span><span class="money" id="cartTotal">0 ₫</span></div>
 <div class="actions"><button class="btn success" onclick="completeOrder()">✓ Hoàn tất đơn hàng</button></div>
 </div></section>
@@ -65,18 +64,18 @@ footer{text-align:center;color:#7793a5;padding:20px}
 <section id="orders" class="section">
 <div class="card"><h2>📋 Quản lý đơn hàng</h2><div class="stats" id="orderStats"></div></div>
 <div class="card"><h2>Danh sách đơn hàng</h2><div class="filters"><select id="orderYear" onchange="renderOrders()"></select><select id="orderMonth" onchange="renderOrders()"><option value="">Tất cả tháng</option><option value="1">Tháng 1</option><option value="2">Tháng 2</option><option value="3">Tháng 3</option><option value="4">Tháng 4</option><option value="5">Tháng 5</option><option value="6">Tháng 6</option><option value="7">Tháng 7</option><option value="8">Tháng 8</option><option value="9">Tháng 9</option><option value="10">Tháng 10</option><option value="11">Tháng 11</option><option value="12">Tháng 12</option></select></div>
-<div class="table-wrap"><table><thead><tr><th>Ngày</th><th>Người mua</th><th>Thông tin</th><th>Số mặt hàng</th><th>Tổng tiền</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody id="ordersBody"></tbody></table></div></div>
+<div class="table-wrap"><table><thead><tr><th>Ngày</th><th>Người mua</th><th>Thông tin</th><th>Loại hàng đặt</th><th>Số mặt hàng</th><th>Tổng tiền</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody id="ordersBody"></tbody></table></div></div>
 <div class="card"><h2>📈 Tổng hợp doanh thu</h2><div class="chartbox"><canvas id="salesChart"></canvas></div></div>
 </section>
 
 <section id="imports" class="section">
 <div class="card"><h2>📥 Quản lý nhập hàng</h2>
 <div class="grid">
-<div class="field"><label>Ngày</label><input type="date" id="nDate"></div><div class="field"><label>Đơn vị</label><input id="nSupplier" placeholder="Nhà cung cấp"></div><div class="field"><label>Loại hàng</label><input id="nType" placeholder="Loại hàng"></div><div class="field"><label>Đơn giá</label><input id="nPrice" type="number" min="0" placeholder="0"></div><div class="field"><label>Số lượng</label><input id="nQty" type="number" min="0.01" step="0.01" placeholder="0"></div><div class="field"><label>Thành tiền</label><input id="nTotal" type="number" min="0" placeholder="Tự tính nếu để trống"></div><div class="field"><label>Ghi chú</label><input id="nNote" placeholder="Ghi chú"></div>
+<div class="field"><label>Ngày</label><input type="date" id="nDate"></div><div class="field"><label>Đơn vị</label><input id="nSupplier" placeholder="Nhà cung cấp"></div><div class="field"><label>Loại hàng</label><input id="nType" placeholder="Loại hàng"></div><div class="field"><label>Đơn giá nhập</label><input id="nPrice" type="number" min="0" placeholder="0"></div><div class="field"><label>Giá bán ra</label><input id="nSellPrice" type="number" min="0" placeholder="0"></div><div class="field"><label>Số lượng</label><input id="nQty" type="number" min="0.01" step="0.01" placeholder="0"></div><div class="field"><label>Thành tiền</label><input id="nTotal" type="number" min="0" placeholder="Tự tính nếu để trống"></div><div class="field"><label>Ghi chú</label><input id="nNote" placeholder="Ghi chú"></div>
 </div><div class="actions"><button class="btn primary" onclick="saveImport()">＋ Thêm nhập hàng</button><button class="btn muted" onclick="clearImport()">Xóa ô nhập</button></div>
 </div>
 <div class="card"><h2>Danh sách nhập hàng & giá cost</h2><div class="filters"><select id="importYear" onchange="renderImports()"></select><select id="importMonth" onchange="renderImports()"><option value="">Tất cả tháng</option><option value="1">Tháng 1</option><option value="2">Tháng 2</option><option value="3">Tháng 3</option><option value="4">Tháng 4</option><option value="5">Tháng 5</option><option value="6">Tháng 6</option><option value="7">Tháng 7</option><option value="8">Tháng 8</option><option value="9">Tháng 9</option><option value="10">Tháng 10</option><option value="11">Tháng 11</option><option value="12">Tháng 12</option></select></div>
-<div class="table-wrap"><table><thead><tr><th>Ngày</th><th>Đơn vị</th><th>Loại hàng</th><th>Đơn giá</th><th>Số lượng</th><th>Thành tiền</th><th>Giá cost</th><th>Ghi chú</th><th>Thao tác</th></tr></thead><tbody id="importsBody"></tbody></table></div>
+<div class="table-wrap"><table><thead><tr><th>Ngày</th><th>Đơn vị</th><th>Loại hàng</th><th>Đơn giá nhập</th><th>Giá bán ra</th><th>Số lượng</th><th>Thành tiền</th><th>Giá cost</th><th>Ghi chú</th><th>Thao tác</th></tr></thead><tbody id="importsBody"></tbody></table></div>
 <div class="total"><span>Tổng nhập:</span><span class="money" id="importTotal">0 ₫</span></div></div>
 <div class="card"><h2>📊 Tổng hợp nhập hàng theo tháng</h2><div class="chartbox"><canvas id="importChart"></canvas></div></div>
 </section>
@@ -104,7 +103,8 @@ const fbApp = firebase.initializeApp(firebaseConfig);
 const fsdb = fbApp.firestore();
 const DATA_REF = fsdb.collection('minhlong').doc('inventory'); // 1 document chứa toàn bộ dữ liệu cửa hàng
 
-let db={orders:[],imports:[]};
+const DEFAULT_STORE_NAME='VẬT LIỆU TỔNG HỢP MINH LONG';
+let db={orders:[],imports:[],storeName:DEFAULT_STORE_NAME};
 let cart=[], editingImport=null, charts={};
 let firebaseReady=false, saving=false;
 const fmt=n=>new Intl.NumberFormat('vi-VN',{style:'currency',currency:'VND',maximumFractionDigits:0}).format(Number(n)||0);
@@ -126,8 +126,9 @@ DATA_REF.onSnapshot(doc=>{
     const data=doc.data()||{};
     db.orders=Array.isArray(data.orders)?data.orders:[];
     db.imports=Array.isArray(data.imports)?data.imports:[];
+    db.storeName=data.storeName||DEFAULT_STORE_NAME;
   } else {
-    db={orders:[],imports:[]};
+    db={orders:[],imports:[],storeName:DEFAULT_STORE_NAME};
     DATA_REF.set(db).catch(err=>console.error('Lỗi khởi tạo dữ liệu:',err));
   }
   firebaseReady=true;
@@ -141,15 +142,43 @@ DATA_REF.onSnapshot(doc=>{
 function today(){return new Date().toISOString().slice(0,10)}
 document.getElementById('oDate').value=today();document.getElementById('nDate').value=today();
 
+function renderStoreName(){
+  const name=db.storeName||DEFAULT_STORE_NAME;
+  document.getElementById('storeName').textContent=name;
+  document.title=name+' - Quản lý Nhập Xuất';
+}
+document.getElementById('editStoreNameBtn').onclick=()=>{
+  let name=prompt('Nhập tên cửa hàng mới:',db.storeName||DEFAULT_STORE_NAME);
+  if(name!==null&&name.trim()){db.storeName=name.trim();renderStoreName();save();}
+};
+
 document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.getElementById(b.dataset.tab).classList.add('active');renderAll()});
 
-function addItem(){
- let name=iName.value.trim(), type=iType.value.trim(), price=+iPrice.value, qty=+iQty.value;
- if(!name||!type||price<0||qty<=0)return alert('Vui lòng nhập đủ thông tin hàng, loại, đơn giá và số lượng.');
- cart.push({name,type,price,qty,total:price*qty,note:iNote.value.trim()}); renderCart();clearItem();
+// Danh sách loại hàng lấy từ phần Nhập hàng, dùng chung cho ô chọn ở Lên đơn hàng
+function itemTypesList(){return [...new Set(db.imports.map(x=>(x.type||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'vi'))}
+function fillItemTypes(){
+  let types=itemTypesList(), sel=document.getElementById('iType'), old=sel.value;
+  sel.innerHTML='<option value="">-- Chọn loại hàng --</option>'+(types.length?types.map(t=>`<option value="${esc(t)}">${esc(t)}</option>`).join(''):'<option value="" disabled>Chưa có loại hàng nào, vui lòng Nhập hàng trước</option>');
+  if(types.includes(old))sel.value=old;
 }
-function clearItem(){iName.value=iType.value=iPrice.value=iQty.value=iNote.value=''}
-function renderCart(){cartBody.innerHTML=cart.length?cart.map((x,i)=>`<tr><td>${i+1}</td><td>${esc(x.name)}</td><td>${esc(x.type)}</td><td class="num">${fmt(x.price)}</td><td class="num">${x.qty}</td><td class="num">${fmt(x.total)}</td><td>${esc(x.note)}</td><td><button class="btn danger" onclick="cart.splice(${i},1);renderCart()">Xóa</button></td></tr>`).join(''):'<tr><td colspan="8" class="empty">Chưa có mặt hàng trong đơn.</td></tr>';cartTotal.textContent=fmt(cart.reduce((s,x)=>s+x.total,0))}
+// Gợi ý Đơn giá theo Giá bán ra đã khai báo ở phiếu nhập gần nhất của loại hàng đó
+function suggestSellPrice(type){
+  let matches=db.imports.filter(x=>(x.type||'').trim()===type&&x.sellPrice>0).sort((a,b)=>(a.date>b.date?1:a.date<b.date?-1:a.id-b.id));
+  return matches.length?matches[matches.length-1].sellPrice:0;
+}
+function onItemTypeChange(){
+  let type=iType.value;
+  if(type){let p=suggestSellPrice(type);if(p)iPrice.value=p;}
+}
+
+function addItem(){
+ let type=iType.value.trim(), price=+iPrice.value, qty=+iQty.value;
+ if(!type)return alert('Vui lòng chọn Loại hàng (chọn từ danh sách đã Nhập hàng).');
+ if(price<0||qty<=0)return alert('Vui lòng nhập đúng Đơn giá và Số lượng.');
+ cart.push({type,price,qty,total:price*qty,note:iNote.value.trim()}); renderCart();clearItem();
+}
+function clearItem(){iType.value=iPrice.value=iQty.value=iNote.value=''}
+function renderCart(){cartBody.innerHTML=cart.length?cart.map((x,i)=>`<tr><td>${i+1}</td><td>${esc(x.type)}</td><td class="num">${fmt(x.price)}</td><td class="num">${x.qty}</td><td class="num">${fmt(x.total)}</td><td>${esc(x.note)}</td><td><button class="btn danger" onclick="cart.splice(${i},1);renderCart()">Xóa</button></td></tr>`).join(''):'<tr><td colspan="7" class="empty">Chưa có mặt hàng trong đơn.</td></tr>';cartTotal.textContent=fmt(cart.reduce((s,x)=>s+x.total,0))}
 function completeOrder(){
  if(!cart.length)return alert('Đơn hàng chưa có mặt hàng.');
  if(!oBuyer.value.trim())return alert('Vui lòng nhập Người mua.');
@@ -159,9 +188,10 @@ function completeOrder(){
 function years(){let ys=new Set([new Date().getFullYear()]);db.orders.forEach(x=>ys.add(+x.date.slice(0,4)));db.imports.forEach(x=>ys.add(+x.date.slice(0,4)));return [...ys].sort((a,b)=>b-a)}
 function fillYears(){let opts=years().map(y=>`<option>${y}</option>`).join('');['orderYear','importYear'].forEach(id=>{let el=document.getElementById(id),old=el.value;el.innerHTML=opts;el.value=opts.includes(`>${old}<`)?old:years()[0]})}
 function filtered(arr,yId,mId){let y=+document.getElementById(yId).value,m=document.getElementById(mId).value;return arr.filter(x=>(!y||+x.date.slice(0,4)===y)&&(!m||+x.date.slice(5,7)===+m))}
+function orderTypesText(o){return [...new Set(o.items.map(x=>x.type))].join(', ')}
 function renderOrders(){
  let arr=filtered(db.orders,'orderYear','orderMonth'), body=ordersBody;
- body.innerHTML=arr.length?arr.slice().reverse().map(o=>`<tr><td>${o.date}</td><td>${esc(o.buyer)}</td><td>${esc(o.info)}</td><td>${o.items.length}</td><td class="num money">${fmt(o.total)}</td><td><span class="badge ${o.delivered?'delivered':'pending'}">${o.delivered?'Đã giao':'Chưa giao'}</span></td><td><div class="actions"><button class="btn success" onclick="toggleDelivered(${o.id})">${o.delivered?'Chưa giao':'Đã giao'}</button><button class="btn muted" onclick="viewInvoice(${o.id})">Xem phiếu</button><button class="btn warning" onclick="printInvoice(${o.id})">In phiếu</button><button class="btn danger" onclick="deleteOrder(${o.id})">Xóa</button></div></td></tr>`).join(''):'<tr><td colspan="7" class="empty">Chưa có đơn hàng.</td></tr>';
+ body.innerHTML=arr.length?arr.slice().reverse().map(o=>`<tr><td>${o.date}</td><td>${esc(o.buyer)}</td><td>${esc(o.info)}</td><td>${esc(orderTypesText(o))}</td><td>${o.items.length}</td><td class="num money">${fmt(o.total)}</td><td><span class="badge ${o.delivered?'delivered':'pending'}">${o.delivered?'Đã giao':'Chưa giao'}</span></td><td><div class="actions"><button class="btn success" onclick="toggleDelivered(${o.id})">${o.delivered?'Chưa giao':'Đã giao'}</button><button class="btn muted" onclick="viewInvoice(${o.id})">Xem phiếu</button><button class="btn warning" onclick="printInvoice(${o.id})">In phiếu</button><button class="btn danger" onclick="deleteOrder(${o.id})">Xóa</button></div></td></tr>`).join(''):'<tr><td colspan="8" class="empty">Chưa có đơn hàng.</td></tr>';
  let total=arr.reduce((s,x)=>s+x.total,0), delivered=arr.filter(x=>x.delivered).length;
  orderStats.innerHTML=`<div class="stat"><span>Số đơn</span><b>${arr.length}</b></div><div class="stat"><span>Doanh thu</span><b>${fmt(total)}</b></div><div class="stat"><span>Đã giao</span><b>${delivered}</b></div><div class="stat"><span>Chưa giao</span><b>${arr.length-delivered}</b></div>`;
  renderSalesChart();
@@ -170,21 +200,21 @@ function toggleDelivered(id){let o=db.orders.find(x=>x.id===id);if(o)o.delivered
 function deleteOrder(id){if(confirm('Xóa đơn hàng này?')){db.orders=db.orders.filter(x=>x.id!==id);save();renderAll()}}
 function viewInvoice(id){let o=db.orders.find(x=>x.id===id);if(!o)return;let w=window.open('','_blank');w.document.write(invoiceHTML(o));w.document.close()}
 function printInvoice(id){let o=db.orders.find(x=>x.id===id);if(!o)return;let w=window.open('','_blank');w.document.write(invoiceHTML(o));w.document.close();w.onload=()=>w.print()}
-function invoiceHTML(o){return `<!doctype html><html lang="vi"><head><meta charset="utf-8"><title>Phiếu ${o.id}</title><style>body{font-family:Arial;padding:30px;color:#222}.invoice{max-width:800px;margin:auto}h1,h2{text-align:center}table{width:100%;border-collapse:collapse}th,td{border:1px solid #aaa;padding:8px}th{background:#eee}.right{text-align:right}.foot{margin-top:30px;display:flex;justify-content:space-between;text-align:center}</style></head><body><div class="invoice"><h2>VẬT LIỆU TỔNG HỢP MINH LONG</h2><h1>PHIẾU ĐƠN HÀNG</h1><p><b>Ngày:</b> ${esc(o.date)} &nbsp; <b>Người mua:</b> ${esc(o.buyer)}</p><p><b>Thông tin:</b> ${esc(o.info)}</p><table><tr><th>STT</th><th>Thông tin</th><th>Loại</th><th>Đơn giá</th><th>SL</th><th>Thành tiền</th><th>Ghi chú</th></tr>${o.items.map((x,i)=>`<tr><td>${i+1}</td><td>${esc(x.name)}</td><td>${esc(x.type)}</td><td class="right">${fmt(x.price)}</td><td>${x.qty}</td><td class="right">${fmt(x.total)}</td><td>${esc(x.note)}</td></tr>`).join('')}<tr><th colspan="5" class="right">TỔNG CỘNG</th><th class="right">${fmt(o.total)}</th><th></th></tr></table><p><b>Ghi chú:</b> ${esc(o.note)}</p><div class="foot"><div>Người mua<br><br><br>________________</div><div>VẬT LIỆU TỔNG HỢP MINH LONG<br><br><br>________________</div></div></div></body></html>`}
+function invoiceHTML(o){const storeName=esc(db.storeName||DEFAULT_STORE_NAME);return `<!doctype html><html lang="vi"><head><meta charset="utf-8"><title>Phiếu ${o.id}</title><style>body{font-family:Arial;padding:30px;color:#222}.invoice{max-width:800px;margin:auto}h1,h2{text-align:center}table{width:100%;border-collapse:collapse}th,td{border:1px solid #aaa;padding:8px}th{background:#eee}.right{text-align:right}.foot{margin-top:30px;display:flex;justify-content:space-between;text-align:center}</style></head><body><div class="invoice"><h2>${storeName}</h2><h1>PHIẾU ĐƠN HÀNG</h1><p><b>Ngày:</b> ${esc(o.date)} &nbsp; <b>Người mua:</b> ${esc(o.buyer)}</p><p><b>Thông tin:</b> ${esc(o.info)}</p><table><tr><th>STT</th><th>Loại hàng</th><th>Đơn giá</th><th>SL</th><th>Thành tiền</th><th>Ghi chú</th></tr>${o.items.map((x,i)=>`<tr><td>${i+1}</td><td>${esc(x.type)}</td><td class="right">${fmt(x.price)}</td><td>${x.qty}</td><td class="right">${fmt(x.total)}</td><td>${esc(x.note)}</td></tr>`).join('')}<tr><th colspan="4" class="right">TỔNG CỘNG</th><th class="right">${fmt(o.total)}</th><th></th></tr></table><p><b>Ghi chú:</b> ${esc(o.note)}</p><div class="foot"><div>Người mua<br><br><br>________________</div><div>${storeName}<br><br><br>________________</div></div></div></body></html>`}
 
 function saveImport(){
- let date=nDate.value,supplier=nSupplier.value.trim(),type=nType.value.trim(),qty=+nQty.value,price=+nPrice.value,total=nTotal.value===''?price*qty:+nTotal.value;
+ let date=nDate.value,supplier=nSupplier.value.trim(),type=nType.value.trim(),qty=+nQty.value,price=+nPrice.value,sellPrice=+nSellPrice.value||0,total=nTotal.value===''?price*qty:+nTotal.value;
  if(!date||!type||qty<=0||total<0)return alert('Vui lòng nhập Ngày, Loại hàng, Số lượng và Thành tiền hợp lệ.');
- let obj={id:editingImport||Date.now(),date,supplier,type,price:price||total/qty,qty,total,note:nNote.value.trim()};
+ let obj={id:editingImport||Date.now(),date,supplier,type,price:price||total/qty,sellPrice,qty,total,note:nNote.value.trim()};
  if(editingImport)db.imports=db.imports.map(x=>x.id===editingImport?obj:x);else db.imports.push(obj);
  save();editingImport=null;clearImport();renderAll();
 }
-function clearImport(){nDate.value=today();nSupplier.value=nType.value=nPrice.value=nQty.value=nTotal.value=nNote.value='';editingImport=null}
-function editImport(id){let x=db.imports.find(a=>a.id===id);if(!x)return;nDate.value=x.date;nSupplier.value=x.supplier;nType.value=x.type;nPrice.value=x.price;nQty.value=x.qty;nTotal.value=x.total;nNote.value=x.note;editingImport=id;document.querySelector('[data-tab="imports"]').click();window.scrollTo({top:0,behavior:'smooth'})}
+function clearImport(){nDate.value=today();nSupplier.value=nType.value=nPrice.value=nSellPrice.value=nQty.value=nTotal.value=nNote.value='';editingImport=null}
+function editImport(id){let x=db.imports.find(a=>a.id===id);if(!x)return;nDate.value=x.date;nSupplier.value=x.supplier;nType.value=x.type;nPrice.value=x.price;nSellPrice.value=x.sellPrice||'';nQty.value=x.qty;nTotal.value=x.total;nNote.value=x.note;editingImport=id;document.querySelector('[data-tab="imports"]').click();window.scrollTo({top:0,behavior:'smooth'})}
 function deleteImport(id){if(confirm('Xóa phiếu nhập này?')){db.imports=db.imports.filter(x=>x.id!==id);save();renderAll()}}
 function renderImports(){
  let arr=filtered(db.imports,'importYear','importMonth');
- importsBody.innerHTML=arr.length?arr.slice().reverse().map(x=>`<tr><td>${x.date}</td><td>${esc(x.supplier)}</td><td>${esc(x.type)}</td><td class="num">${fmt(x.price)}</td><td class="num">${x.qty}</td><td class="num">${fmt(x.total)}</td><td class="num money">${fmt(x.qty?x.total/x.qty:0)}</td><td>${esc(x.note)}</td><td><div class="actions"><button class="btn warning" onclick="editImport(${x.id})">Sửa</button><button class="btn danger" onclick="deleteImport(${x.id})">Xóa</button></div></td></tr>`).join(''):'<tr><td colspan="9" class="empty">Chưa có dữ liệu nhập hàng.</td></tr>';
+ importsBody.innerHTML=arr.length?arr.slice().reverse().map(x=>`<tr><td>${x.date}</td><td>${esc(x.supplier)}</td><td>${esc(x.type)}</td><td class="num">${fmt(x.price)}</td><td class="num">${fmt(x.sellPrice||0)}</td><td class="num">${x.qty}</td><td class="num">${fmt(x.total)}</td><td class="num money">${fmt(x.qty?x.total/x.qty:0)}</td><td>${esc(x.note)}</td><td><div class="actions"><button class="btn warning" onclick="editImport(${x.id})">Sửa</button><button class="btn danger" onclick="deleteImport(${x.id})">Xóa</button></div></td></tr>`).join(''):'<tr><td colspan="10" class="empty">Chưa có dữ liệu nhập hàng.</td></tr>';
  importTotal.textContent=fmt(arr.reduce((s,x)=>s+x.total,0));renderImportChart();
 }
 function getStock(){
@@ -207,7 +237,7 @@ function renderImportChart(){
  let y=+importYear.value,labels=Array.from({length:12},(_,i)=>'T'+(i+1)),data=labels.map((_,i)=>db.imports.filter(o=>+o.date.slice(0,4)===y&&+o.date.slice(5,7)===i+1).reduce((s,o)=>s+o.total,0));
  if(charts.imports)charts.imports.destroy();charts.imports=new Chart(importChart,{type:'bar',data:{labels,datasets:[{label:'Tổng tiền nhập',data}]},options:{responsive:true,maintainAspectRatio:false}});
 }
-function renderAll(){fillYears();renderCart();renderOrders();renderImports();renderStock()}
+function renderAll(){renderStoreName();fillItemTypes();fillYears();renderCart();renderOrders();renderImports();renderStock()}
 renderAll();
 </script>
 </body>
