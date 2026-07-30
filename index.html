@@ -64,7 +64,7 @@ footer{text-align:center;color:#7793a5;padding:20px}
 <section id="orders" class="section">
 <div class="card"><h2>📋 Quản lý đơn hàng</h2><div class="stats" id="orderStats"></div></div>
 <div class="card"><h2>Danh sách đơn hàng</h2><div class="filters"><select id="orderYear" onchange="renderOrders()"></select><select id="orderMonth" onchange="renderOrders()"><option value="">Tất cả tháng</option><option value="1">Tháng 1</option><option value="2">Tháng 2</option><option value="3">Tháng 3</option><option value="4">Tháng 4</option><option value="5">Tháng 5</option><option value="6">Tháng 6</option><option value="7">Tháng 7</option><option value="8">Tháng 8</option><option value="9">Tháng 9</option><option value="10">Tháng 10</option><option value="11">Tháng 11</option><option value="12">Tháng 12</option></select></div>
-<div class="table-wrap"><table><thead><tr><th>Ngày</th><th>Người mua</th><th>Thông tin</th><th>Loại hàng đặt</th><th>Số mặt hàng</th><th>Tổng tiền</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody id="ordersBody"></tbody></table></div></div>
+<div class="table-wrap"><table><thead><tr><th>Ngày</th><th>Người mua</th><th>Thông tin</th><th>Loại hàng đặt</th><th>Số mặt hàng</th><th>Tổng tiền</th><th>Giao hàng</th><th>Thanh toán</th><th>Thao tác</th></tr></thead><tbody id="ordersBody"></tbody></table></div></div>
 <div class="card"><h2>📈 Tổng hợp doanh thu</h2><div class="chartbox"><canvas id="salesChart"></canvas></div></div>
 </section>
 
@@ -82,7 +82,7 @@ footer{text-align:center;color:#7793a5;padding:20px}
 
 <section id="stock" class="section">
 <div class="card"><h2>📦 Quản lý tồn kho</h2><div class="stats" id="stockStats"></div></div>
-<div class="card"><h2>Tồn kho theo loại hàng</h2><div class="table-wrap"><table><thead><tr><th>Loại hàng</th><th>Số lượng nhập</th><th>Số lượng đã bán</th><th>Số lượng còn lại</th><th>Doanh thu</th><th>Giá trị nhập</th><th>Lợi nhuận gộp</th></tr></thead><tbody id="stockBody"></tbody></table></div></div>
+<div class="card"><h2>Tồn kho theo loại hàng</h2><div class="table-wrap"><table><thead><tr><th>Loại hàng</th><th>Số lượng nhập</th><th>Số lượng đã bán</th><th>Số lượng còn lại</th><th>Doanh thu</th><th>Giá trị nhập</th><th>Lợi nhuận gộp</th><th>Công nợ còn lại</th></tr></thead><tbody id="stockBody"></tbody></table></div></div>
 <div class="card"><h2>🔥 Hàng bán chạy nhất</h2><div class="chartbox"><canvas id="stockChart"></canvas></div></div>
 </section>
 </main>
@@ -156,9 +156,14 @@ document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{document.querySelect
 
 // Danh sách loại hàng lấy từ phần Nhập hàng, dùng chung cho ô chọn ở Lên đơn hàng
 function itemTypesList(){return [...new Set(db.imports.map(x=>(x.type||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'vi'))}
+function conflictingTypesSet(){
+  let map={};
+  db.imports.forEach(x=>{let t=(x.type||'').trim().toLowerCase(),sp=+x.sellPrice||0;if(!t||sp<=0)return;map[t]??=new Set();map[t].add(sp)});
+  return new Set(Object.keys(map).filter(t=>map[t].size>1));
+}
 function fillItemTypes(){
-  let types=itemTypesList(), sel=document.getElementById('iType'), old=sel.value;
-  sel.innerHTML='<option value="">-- Chọn loại hàng --</option>'+(types.length?types.map(t=>`<option value="${esc(t)}">${esc(t)}</option>`).join(''):'<option value="" disabled>Chưa có loại hàng nào, vui lòng Nhập hàng trước</option>');
+  let types=itemTypesList(), sel=document.getElementById('iType'), old=sel.value, conflicts=conflictingTypesSet();
+  sel.innerHTML='<option value="">-- Chọn loại hàng --</option>'+(types.length?types.map(t=>{let bad=conflicts.has(t.toLowerCase());return `<option value="${esc(t)}" ${bad?'disabled':''}>${esc(t)}${bad?' ⚠ (giá bán ra chưa thống nhất)':''}</option>`}).join(''):'<option value="" disabled>Chưa có loại hàng nào, vui lòng Nhập hàng trước</option>');
   if(types.includes(old))sel.value=old;
 }
 // Gợi ý Đơn giá theo Giá bán ra đã khai báo ở phiếu nhập gần nhất của loại hàng đó
@@ -182,7 +187,7 @@ function renderCart(){cartBody.innerHTML=cart.length?cart.map((x,i)=>`<tr><td>${
 function completeOrder(){
  if(!cart.length)return alert('Đơn hàng chưa có mặt hàng.');
  if(!oBuyer.value.trim())return alert('Vui lòng nhập Người mua.');
- db.orders.push({id:Date.now(),date:oDate.value,buyer:oBuyer.value.trim(),info:oInfo.value.trim(),note:oNote.value.trim(),items:cart.map(x=>({...x})),total:cart.reduce((s,x)=>s+x.total,0),delivered:false});
+ db.orders.push({id:Date.now(),date:oDate.value,buyer:oBuyer.value.trim(),info:oInfo.value.trim(),note:oNote.value.trim(),items:cart.map(x=>({...x})),total:cart.reduce((s,x)=>s+x.total,0),delivered:false,paid:false});
  save();alert('Đã hoàn tất đơn hàng.');cart=[];renderCart();oBuyer.value=oInfo.value=oNote.value='';renderAll();
 }
 function years(){let ys=new Set([new Date().getFullYear()]);db.orders.forEach(x=>ys.add(+x.date.slice(0,4)));db.imports.forEach(x=>ys.add(+x.date.slice(0,4)));return [...ys].sort((a,b)=>b-a)}
@@ -191,20 +196,27 @@ function filtered(arr,yId,mId){let y=+document.getElementById(yId).value,m=docum
 function orderTypesText(o){return [...new Set(o.items.map(x=>x.type))].join(', ')}
 function renderOrders(){
  let arr=filtered(db.orders,'orderYear','orderMonth'), body=ordersBody;
- body.innerHTML=arr.length?arr.slice().reverse().map(o=>`<tr><td>${o.date}</td><td>${esc(o.buyer)}</td><td>${esc(o.info)}</td><td>${esc(orderTypesText(o))}</td><td>${o.items.length}</td><td class="num money">${fmt(o.total)}</td><td><span class="badge ${o.delivered?'delivered':'pending'}">${o.delivered?'Đã giao':'Chưa giao'}</span></td><td><div class="actions"><button class="btn success" onclick="toggleDelivered(${o.id})">${o.delivered?'Chưa giao':'Đã giao'}</button><button class="btn muted" onclick="viewInvoice(${o.id})">Xem phiếu</button><button class="btn warning" onclick="printInvoice(${o.id})">In phiếu</button><button class="btn danger" onclick="deleteOrder(${o.id})">Xóa</button></div></td></tr>`).join(''):'<tr><td colspan="8" class="empty">Chưa có đơn hàng.</td></tr>';
- let total=arr.reduce((s,x)=>s+x.total,0), delivered=arr.filter(x=>x.delivered).length;
- orderStats.innerHTML=`<div class="stat"><span>Số đơn</span><b>${arr.length}</b></div><div class="stat"><span>Doanh thu</span><b>${fmt(total)}</b></div><div class="stat"><span>Đã giao</span><b>${delivered}</b></div><div class="stat"><span>Chưa giao</span><b>${arr.length-delivered}</b></div>`;
+ body.innerHTML=arr.length?arr.slice().reverse().map(o=>`<tr><td>${o.date}</td><td>${esc(o.buyer)}</td><td>${esc(o.info)}</td><td>${esc(orderTypesText(o))}</td><td>${o.items.length}</td><td class="num money">${fmt(o.total)}</td><td><span class="badge ${o.delivered?'delivered':'pending'}">${o.delivered?'Đã giao':'Chưa giao'}</span></td><td><span class="badge ${o.paid?'delivered':'pending'}">${o.paid?'Đã thanh toán':'Chưa thanh toán'}</span></td><td><div class="actions"><button class="btn success" onclick="toggleDelivered(${o.id})">${o.delivered?'Chưa giao':'Đã giao'}</button><button class="btn ${o.paid?'muted':'primary'}" onclick="togglePaid(${o.id})">${o.paid?'Hủy thanh toán':'Đã thanh toán'}</button><button class="btn muted" onclick="viewInvoice(${o.id})">Xem phiếu</button><button class="btn warning" onclick="printInvoice(${o.id})">In phiếu</button><button class="btn danger" onclick="deleteOrder(${o.id})">Xóa</button></div></td></tr>`).join(''):'<tr><td colspan="9" class="empty">Chưa có đơn hàng.</td></tr>';
+ let total=arr.reduce((s,x)=>s+x.total,0), delivered=arr.filter(x=>x.delivered).length, debt=arr.filter(x=>!x.paid).reduce((s,x)=>s+x.total,0);
+ orderStats.innerHTML=`<div class="stat"><span>Số đơn</span><b>${arr.length}</b></div><div class="stat"><span>Doanh thu</span><b>${fmt(total)}</b></div><div class="stat"><span>Đã giao</span><b>${delivered}</b></div><div class="stat"><span>Công nợ còn lại</span><b>${fmt(debt)}</b></div>`;
  renderSalesChart();
 }
 function toggleDelivered(id){let o=db.orders.find(x=>x.id===id);if(o)o.delivered=!o.delivered;save();renderAll()}
+function togglePaid(id){let o=db.orders.find(x=>x.id===id);if(o)o.paid=!o.paid;save();renderAll()}
 function deleteOrder(id){if(confirm('Xóa đơn hàng này?')){db.orders=db.orders.filter(x=>x.id!==id);save();renderAll()}}
 function viewInvoice(id){let o=db.orders.find(x=>x.id===id);if(!o)return;let w=window.open('','_blank');w.document.write(invoiceHTML(o));w.document.close()}
 function printInvoice(id){let o=db.orders.find(x=>x.id===id);if(!o)return;let w=window.open('','_blank');w.document.write(invoiceHTML(o));w.document.close();w.onload=()=>w.print()}
 function invoiceHTML(o){const storeName=esc(db.storeName||DEFAULT_STORE_NAME);return `<!doctype html><html lang="vi"><head><meta charset="utf-8"><title>Phiếu ${o.id}</title><style>body{font-family:Arial;padding:30px;color:#222}.invoice{max-width:800px;margin:auto}h1,h2{text-align:center}table{width:100%;border-collapse:collapse}th,td{border:1px solid #aaa;padding:8px}th{background:#eee}.right{text-align:right}.foot{margin-top:30px;display:flex;justify-content:space-between;text-align:center}</style></head><body><div class="invoice"><h2>${storeName}</h2><h1>PHIẾU ĐƠN HÀNG</h1><p><b>Ngày:</b> ${esc(o.date)} &nbsp; <b>Người mua:</b> ${esc(o.buyer)}</p><p><b>Thông tin:</b> ${esc(o.info)}</p><table><tr><th>STT</th><th>Loại hàng</th><th>Đơn giá</th><th>SL</th><th>Thành tiền</th><th>Ghi chú</th></tr>${o.items.map((x,i)=>`<tr><td>${i+1}</td><td>${esc(x.type)}</td><td class="right">${fmt(x.price)}</td><td>${x.qty}</td><td class="right">${fmt(x.total)}</td><td>${esc(x.note)}</td></tr>`).join('')}<tr><th colspan="4" class="right">TỔNG CỘNG</th><th class="right">${fmt(o.total)}</th><th></th></tr></table><p><b>Ghi chú:</b> ${esc(o.note)}</p><div class="foot"><div>Người mua<br><br><br>________________</div><div>${storeName}<br><br><br>________________</div></div></div></body></html>`}
 
+function typeSellPriceConflict(type,sellPrice,excludeId){
+ if(!sellPrice)return null;
+ return db.imports.find(x=>x.id!==excludeId&&(x.type||'').trim().toLowerCase()===type.toLowerCase()&&(+x.sellPrice||0)>0&&(+x.sellPrice)!==sellPrice)||null;
+}
 function saveImport(){
  let date=nDate.value,supplier=nSupplier.value.trim(),type=nType.value.trim(),qty=+nQty.value,price=+nPrice.value,sellPrice=+nSellPrice.value||0,total=nTotal.value===''?price*qty:+nTotal.value;
  if(!date||!type||qty<=0||total<0)return alert('Vui lòng nhập Ngày, Loại hàng, Số lượng và Thành tiền hợp lệ.');
+ let conflict=typeSellPriceConflict(type,sellPrice,editingImport);
+ if(conflict)return alert(`Loại hàng "${type}" đã tồn tại với Giá bán ra khác là ${fmt(conflict.sellPrice)} (đơn vị: ${conflict.supplier||'không rõ'}).\nMỗi tên Loại hàng chỉ được gắn với 1 Giá bán ra duy nhất để khi Lên đơn hàng không bị nhầm giá.\n\nVui lòng: đặt Giá bán ra = ${fmt(conflict.sellPrice)}, hoặc đổi sang tên Loại hàng khác để phân biệt (ví dụ: "${type} (${supplier||'nhà cung cấp'})").`);
  let obj={id:editingImport||Date.now(),date,supplier,type,price:price||total/qty,sellPrice,qty,total,note:nNote.value.trim()};
  if(editingImport)db.imports=db.imports.map(x=>x.id===editingImport?obj:x);else db.imports.push(obj);
  save();editingImport=null;clearImport();renderAll();
@@ -213,20 +225,21 @@ function clearImport(){nDate.value=today();nSupplier.value=nType.value=nPrice.va
 function editImport(id){let x=db.imports.find(a=>a.id===id);if(!x)return;nDate.value=x.date;nSupplier.value=x.supplier;nType.value=x.type;nPrice.value=x.price;nSellPrice.value=x.sellPrice||'';nQty.value=x.qty;nTotal.value=x.total;nNote.value=x.note;editingImport=id;document.querySelector('[data-tab="imports"]').click();window.scrollTo({top:0,behavior:'smooth'})}
 function deleteImport(id){if(confirm('Xóa phiếu nhập này?')){db.imports=db.imports.filter(x=>x.id!==id);save();renderAll()}}
 function renderImports(){
- let arr=filtered(db.imports,'importYear','importMonth');
- importsBody.innerHTML=arr.length?arr.slice().reverse().map(x=>`<tr><td>${x.date}</td><td>${esc(x.supplier)}</td><td>${esc(x.type)}</td><td class="num">${fmt(x.price)}</td><td class="num">${fmt(x.sellPrice||0)}</td><td class="num">${x.qty}</td><td class="num">${fmt(x.total)}</td><td class="num money">${fmt(x.qty?x.total/x.qty:0)}</td><td>${esc(x.note)}</td><td><div class="actions"><button class="btn warning" onclick="editImport(${x.id})">Sửa</button><button class="btn danger" onclick="deleteImport(${x.id})">Xóa</button></div></td></tr>`).join(''):'<tr><td colspan="10" class="empty">Chưa có dữ liệu nhập hàng.</td></tr>';
+ let arr=filtered(db.imports,'importYear','importMonth'), conflicts=conflictingTypesSet();
+ importsBody.innerHTML=arr.length?arr.slice().reverse().map(x=>{let bad=conflicts.has((x.type||'').trim().toLowerCase());return `<tr${bad?' style="background:#fff2f2"':''}><td>${x.date}</td><td>${esc(x.supplier)}</td><td>${esc(x.type)}${bad?' <span class="badge pending" title="Loại hàng này đang có nhiều Giá bán ra khác nhau, cần đổi tên hoặc thống nhất giá">⚠ giá chưa thống nhất</span>':''}</td><td class="num">${fmt(x.price)}</td><td class="num">${fmt(x.sellPrice||0)}</td><td class="num">${x.qty}</td><td class="num">${fmt(x.total)}</td><td class="num money">${fmt(x.qty?x.total/x.qty:0)}</td><td>${esc(x.note)}</td><td><div class="actions"><button class="btn warning" onclick="editImport(${x.id})">Sửa</button><button class="btn danger" onclick="deleteImport(${x.id})">Xóa</button></div></td></tr>`}).join(''):'<tr><td colspan="10" class="empty">Chưa có dữ liệu nhập hàng.</td></tr>';
  importTotal.textContent=fmt(arr.reduce((s,x)=>s+x.total,0));renderImportChart();
 }
 function getStock(){
  let map={};
- db.imports.forEach(x=>{let k=x.type||'Khác';map[k]??={inQty:0,soldQty:0,revenue:0,importValue:0};map[k].inQty+=+x.qty;map[k].importValue+=+x.total});
- db.orders.forEach(o=>o.items.forEach(x=>{let k=x.type||'Khác';map[k]??={inQty:0,soldQty:0,revenue:0,importValue:0};map[k].soldQty+=+x.qty;map[k].revenue+=+x.total}));
+ db.imports.forEach(x=>{let k=x.type||'Khác';map[k]??={inQty:0,soldQty:0,revenue:0,importValue:0,debt:0};map[k].inQty+=+x.qty;map[k].importValue+=+x.total});
+ db.orders.forEach(o=>o.items.forEach(x=>{let k=x.type||'Khác';map[k]??={inQty:0,soldQty:0,revenue:0,importValue:0,debt:0};map[k].soldQty+=+x.qty;map[k].revenue+=+x.total;map[k].debt+=o.paid?0:+x.total}));
  return map;
 }
 function renderStock(){
  let m=getStock(),keys=Object.keys(m),totalIn=0,totalSold=0,revenue=0,cost=0;
- stockBody.innerHTML=keys.length?keys.map(k=>{let x=m[k],stock=x.inQty-x.soldQty,profit=x.revenue-x.importValue;totalIn+=x.inQty;totalSold+=x.soldQty;revenue+=x.revenue;cost+=x.importValue;return `<tr><td><b>${esc(k)}</b></td><td class="num">${x.inQty}</td><td class="num">${x.soldQty}</td><td class="num ${stock<0?'money':''}">${stock}</td><td class="num">${fmt(x.revenue)}</td><td class="num">${fmt(x.importValue)}</td><td class="num money">${fmt(profit)}</td></tr>`}).join(''):'<tr><td colspan="7" class="empty">Chưa có dữ liệu tồn kho.</td></tr>';
- stockStats.innerHTML=`<div class="stat"><span>Tổng nhập</span><b>${totalIn}</b></div><div class="stat"><span>Tổng bán</span><b>${totalSold}</b></div><div class="stat"><span>Doanh thu</span><b>${fmt(revenue)}</b></div><div class="stat"><span>Lợi nhuận gộp</span><b>${fmt(revenue-cost)}</b></div>`;
+ let totalDebt=0;
+ stockBody.innerHTML=keys.length?keys.map(k=>{let x=m[k],stock=x.inQty-x.soldQty,profit=x.revenue-x.importValue;totalIn+=x.inQty;totalSold+=x.soldQty;revenue+=x.revenue;cost+=x.importValue;totalDebt+=x.debt;return `<tr><td><b>${esc(k)}</b></td><td class="num">${x.inQty}</td><td class="num">${x.soldQty}</td><td class="num ${stock<0?'money':''}">${stock}</td><td class="num">${fmt(x.revenue)}</td><td class="num">${fmt(x.importValue)}</td><td class="num money">${fmt(profit)}</td><td class="num ${x.debt>0?'money':''}">${fmt(x.debt)}</td></tr>`}).join(''):'<tr><td colspan="8" class="empty">Chưa có dữ liệu tồn kho.</td></tr>';
+ stockStats.innerHTML=`<div class="stat"><span>Tổng nhập</span><b>${totalIn}</b></div><div class="stat"><span>Tổng bán</span><b>${totalSold}</b></div><div class="stat"><span>Doanh thu</span><b>${fmt(revenue)}</b></div><div class="stat"><span>Lợi nhuận gộp</span><b>${fmt(revenue-cost)}</b></div><div class="stat"><span>Công nợ còn lại</span><b>${fmt(totalDebt)}</b></div>`;
  if(charts.stock)charts.stock.destroy();if(keys.length)charts.stock=new Chart(stockChart,{type:'bar',data:{labels:keys,datasets:[{label:'Số lượng bán',data:keys.map(k=>m[k].soldQty)}]},options:{responsive:true,maintainAspectRatio:false}});
 }
 function renderSalesChart(){
