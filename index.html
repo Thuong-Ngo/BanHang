@@ -88,6 +88,31 @@ footer{text-align:center;color:#7793a5;padding:20px}
 </section>
 </main>
 <div id="printArea" class="print-area" style="display:none"></div>
+
+<div id="editOrderModal" style="display:none;position:fixed;inset:0;background:#12344dcc;z-index:100;align-items:center;justify-content:center;padding:14px">
+<div class="card" style="max-width:900px;width:100%;max-height:92vh;overflow:auto;margin:0">
+<h2>✎ Chỉnh sửa đơn hàng</h2>
+<div class="grid">
+<div class="field"><label>Ngày</label><input type="date" id="eDate"></div>
+<div class="field"><label>Người mua</label><input id="eBuyer" placeholder="Tên người mua"></div>
+<div class="field"><label>Số điện thoại</label><input id="ePhone" type="tel" placeholder="Số điện thoại"></div>
+<div class="field"><label>Địa chỉ</label><input id="eAddress" placeholder="Địa chỉ giao hàng"></div>
+</div>
+<div class="field" style="margin-top:12px"><label>Ghi chú đơn hàng</label><input id="eNote" placeholder="Ghi chú"></div>
+<hr style="border:0;border-top:1px solid #e5eef5;margin:18px 0">
+<div class="grid">
+<div class="field"><label>Loại hàng</label><select id="emType"><option value="">-- Chọn loại hàng --</option></select></div>
+<div class="field"><label>Đơn giá</label><input id="emPrice" type="number" min="0" placeholder="0"></div>
+<div class="field"><label>Số lượng</label><input id="emQty" type="number" min="0.01" step="0.01" placeholder="0"></div>
+</div>
+<div class="field" style="margin-top:12px"><label>Ghi chú dòng hàng</label><input id="emNote" placeholder="Ghi chú"></div>
+<div class="actions"><button class="btn primary" onclick="addEditItem()">＋ Thêm vào đơn</button><button class="btn muted" onclick="clearEditItem()">Xóa ô nhập</button></div>
+<div class="table-wrap" style="margin-top:15px"><table><thead><tr><th>#</th><th>Loại hàng</th><th>Đơn giá</th><th>Số lượng</th><th>Thành tiền</th><th>Ghi chú</th><th></th></tr></thead><tbody id="editCartBody"></tbody></table></div>
+<div class="total"><span>Tổng đơn hàng:</span><span class="money" id="editCartTotal">0 ₫</span></div>
+<div class="actions"><button class="btn success" onclick="saveEditOrder()">✓ Lưu thay đổi</button><button class="btn muted" onclick="closeEditOrder()">Hủy</button></div>
+</div>
+</div>
+
 <footer>Dữ liệu được đồng bộ trực tiếp qua Firebase — dùng chung được trên nhiều thiết bị.</footer>
 
 <script>
@@ -190,8 +215,9 @@ function conflictingTypesSet(){
   db.imports.forEach(x=>{let t=(x.type||'').trim().toLowerCase(),sp=+x.sellPrice||0;if(!t||sp<=0)return;map[t]??=new Set();map[t].add(sp)});
   return new Set(Object.keys(map).filter(t=>map[t].size>1));
 }
-function fillItemTypes(){
-  let types=itemTypesList(), sel=document.getElementById('iType'), old=sel.value, conflicts=conflictingTypesSet();
+function fillItemTypes(id){
+  id=id||'iType';
+  let types=itemTypesList(), sel=document.getElementById(id), old=sel.value, conflicts=conflictingTypesSet();
   sel.innerHTML='<option value="">-- Chọn loại hàng --</option>'+(types.length?types.map(t=>{let bad=conflicts.has(t.toLowerCase());return `<option value="${esc(t)}" ${bad?'disabled':''}>${esc(t)}${bad?' ⚠ (giá bán ra chưa thống nhất)':''}</option>`}).join(''):'<option value="" disabled>Chưa có loại hàng nào, vui lòng Nhập hàng trước</option>');
   if(types.includes(old))sel.value=old;
 }
@@ -226,7 +252,7 @@ function filtered(arr,yId,mId){let y=+document.getElementById(yId).value,m=docum
 function orderTypesText(o){return [...new Set(o.items.map(x=>x.type))].join(', ')}
 function renderOrders(){
  let arr=filtered(db.orders,'orderYear','orderMonth'), body=ordersBody;
- body.innerHTML=arr.length?arr.slice().reverse().map(o=>`<tr><td>${o.date}</td><td>${esc(o.buyer)}</td><td>${esc(o.phone||o.info||'')}</td><td>${esc(o.address||'')}</td><td>${esc(orderTypesText(o))}</td><td>${o.items.length}</td><td class="num money">${fmt(o.total)}</td><td><span class="badge ${o.delivered?'delivered':'pending'}">${o.delivered?'Đã giao':'Chưa giao'}</span></td><td><span class="badge ${o.paid?'delivered':'pending'}">${o.paid?'Đã thanh toán':'Chưa thanh toán'}</span></td><td><div class="actions"><button class="btn success" onclick="toggleDelivered(${o.id})">${o.delivered?'Chưa giao':'Đã giao'}</button><button class="btn ${o.paid?'muted':'primary'}" onclick="togglePaid(${o.id})">${o.paid?'Hủy thanh toán':'Đã thanh toán'}</button><button class="btn muted" onclick="viewInvoice(${o.id})">Xem phiếu</button><button class="btn warning" onclick="printInvoice(${o.id})">In phiếu</button><button class="btn muted" onclick="printDeliveryInfo(${o.id})">🚚 In thông tin</button><button class="btn danger" onclick="deleteOrder(${o.id})">Xóa</button></div></td></tr>`).join(''):'<tr><td colspan="10" class="empty">Chưa có đơn hàng.</td></tr>';
+ body.innerHTML=arr.length?arr.slice().reverse().map(o=>`<tr><td>${o.date}</td><td>${esc(o.buyer)}</td><td>${esc(o.phone||o.info||'')}</td><td>${esc(o.address||'')}</td><td>${esc(orderTypesText(o))}</td><td>${o.items.length}</td><td class="num money">${fmt(o.total)}</td><td><span class="badge ${o.delivered?'delivered':'pending'}">${o.delivered?'Đã giao':'Chưa giao'}</span></td><td><span class="badge ${o.paid?'delivered':'pending'}">${o.paid?'Đã thanh toán':'Chưa thanh toán'}</span></td><td><div class="actions"><button class="btn success" onclick="toggleDelivered(${o.id})">${o.delivered?'Chưa giao':'Đã giao'}</button><button class="btn ${o.paid?'muted':'primary'}" onclick="togglePaid(${o.id})">${o.paid?'Hủy thanh toán':'Đã thanh toán'}</button><button class="btn warning" onclick="printInvoice(${o.id})">In phiếu</button><button class="btn muted" onclick="editOrder(${o.id})">✎ Chỉnh sửa</button><button class="btn muted" onclick="printDeliveryInfo(${o.id})">🚚 In thông tin</button><button class="btn danger" onclick="deleteOrder(${o.id})">Xóa</button></div></td></tr>`).join(''):'<tr><td colspan="10" class="empty">Chưa có đơn hàng.</td></tr>';
  let total=arr.reduce((s,x)=>s+x.total,0), delivered=arr.filter(x=>x.delivered).length, debt=arr.filter(x=>!x.paid).reduce((s,x)=>s+x.total,0);
  orderStats.innerHTML=`<div class="stat"><span>Số đơn</span><b>${arr.length}</b></div><div class="stat"><span>Doanh thu</span><b>${fmt(total)}</b></div><div class="stat"><span>Đã giao</span><b>${delivered}</b></div><div class="stat"><span>Công nợ còn lại</span><b>${fmt(debt)}</b></div>`;
  renderSalesChart();
@@ -234,6 +260,39 @@ function renderOrders(){
 function toggleDelivered(id){let o=db.orders.find(x=>x.id===id);if(o)o.delivered=!o.delivered;save();renderAll()}
 function togglePaid(id){let o=db.orders.find(x=>x.id===id);if(o)o.paid=!o.paid;save();renderAll()}
 function deleteOrder(id){if(confirm('Xóa đơn hàng này?')){db.orders=db.orders.filter(x=>x.id!==id);save();renderAll()}}
+
+let editingOrderId=null, editCart=[];
+function editOrder(id){
+ let o=db.orders.find(x=>x.id===id); if(!o)return;
+ editingOrderId=id;
+ editCart=o.items.map(x=>({...x}));
+ eDate.value=o.date; eBuyer.value=o.buyer||''; ePhone.value=o.phone||o.info||''; eAddress.value=o.address||''; eNote.value=o.note||'';
+ fillItemTypes('emType');
+ clearEditItem();
+ renderEditCart();
+ document.getElementById('editOrderModal').style.display='flex';
+}
+function closeEditOrder(){document.getElementById('editOrderModal').style.display='none';editingOrderId=null;editCart=[]}
+function clearEditItem(){emType.value=emPrice.value=emQty.value=emNote.value=''}
+function addEditItem(){
+ let type=emType.value.trim(), price=+emPrice.value, qty=+emQty.value;
+ if(!type)return alert('Vui lòng chọn Loại hàng (chọn từ danh sách đã Nhập hàng).');
+ if(price<0||qty<=0)return alert('Vui lòng nhập đúng Đơn giá và Số lượng.');
+ editCart.push({type,price,qty,total:price*qty,note:emNote.value.trim()}); renderEditCart(); clearEditItem();
+}
+function renderEditCart(){
+ editCartBody.innerHTML=editCart.length?editCart.map((x,i)=>`<tr><td>${i+1}</td><td>${esc(x.type)}</td><td class="num">${fmt(x.price)}</td><td class="num">${x.qty}</td><td class="num">${fmt(x.total)}</td><td>${esc(x.note)}</td><td><button class="btn danger" onclick="editCart.splice(${i},1);renderEditCart()">Xóa</button></td></tr>`).join(''):'<tr><td colspan="7" class="empty">Chưa có mặt hàng trong đơn.</td></tr>';
+ editCartTotal.textContent=fmt(editCart.reduce((s,x)=>s+x.total,0));
+}
+function saveEditOrder(){
+ if(!editingOrderId)return;
+ if(!editCart.length)return alert('Đơn hàng chưa có mặt hàng.');
+ if(!eBuyer.value.trim())return alert('Vui lòng nhập Người mua.');
+ let o=db.orders.find(x=>x.id===editingOrderId); if(!o)return;
+ o.date=eDate.value; o.buyer=eBuyer.value.trim(); o.phone=ePhone.value.trim(); o.address=eAddress.value.trim(); o.note=eNote.value.trim();
+ o.items=editCart.map(x=>({...x})); o.total=editCart.reduce((s,x)=>s+x.total,0);
+ save(); closeEditOrder(); renderAll();
+}
 function viewInvoice(id){let o=db.orders.find(x=>x.id===id);if(!o)return;let w=window.open('','_blank');w.document.write(invoiceHTML(o));w.document.close()}
 function printInvoice(id){let o=db.orders.find(x=>x.id===id);if(!o)return;let w=window.open('','_blank');w.document.write(invoiceHTML(o));w.document.close();w.onload=()=>w.print()}
 function dateParts(d){if(!d)return{day:'',month:'',year:''};let[y,m,day]=d.split('-');return{day:+day,month:+m,year:y}}
