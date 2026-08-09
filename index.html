@@ -282,25 +282,37 @@ ${o.note?`<p style="margin-top:16px;font-size:15px"><b>Ghi chú:</b> ${esc(o.not
 }
 function deliveryInfoHTML(o){
  const storeName=esc(db.storeName||DEFAULT_STORE_NAME);
- const logo=db.logoUrl?`<img src="${db.logoUrl}" alt="logo" style="height:56px;object-fit:contain">`:'';
- return `<!doctype html><html lang="vi"><head><meta charset="utf-8"><title>Thông tin giao hàng ${o.no||o.id}</title>
+ const logo=db.logoUrl?`<img src="${db.logoUrl}" alt="logo" style="height:52px;object-fit:contain">`:'';
+ const no=o.no||o.id;
+ return `<!doctype html><html lang="vi"><head><meta charset="utf-8"><title>Thông tin giao hàng ${no}</title>
 <style>
  body{font-family:Arial,Helvetica,sans-serif;padding:30px;color:#111}
- .box{max-width:640px;margin:auto;border:2px solid #333;border-radius:12px;padding:26px 30px}
- .head{display:flex;align-items:center;gap:12px;justify-content:center;margin-bottom:6px}
+ .box{max-width:640px;margin:auto;border:2px solid #333;border-radius:12px;padding:24px 30px}
+ .top{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+ .no{font-size:15px;font-weight:bold}
  h2{text-align:center;margin:0 0 20px;letter-spacing:.5px}
- p{font-size:20px;margin:16px 0;line-height:1.4}
- b{display:inline-block;min-width:150px;vertical-align:top}
- .storeline{text-align:center;color:#456;font-size:13px;margin-top:-4px;margin-bottom:14px}
+ h3{margin:18px 0 8px;font-size:16px;color:#0b5fa8;border-bottom:2px solid #cbddea;padding-bottom:4px}
+ .section:first-of-type h3{margin-top:6px}
+ p{font-size:19px;margin:12px 0;line-height:1.4}
+ b{display:inline-block;min-width:140px;vertical-align:top}
+ .storeline{text-align:center;color:#456;font-size:13px;margin-top:18px}
  @media print{body{padding:10mm}}
 </style></head><body><div class="box">
-<div class="head">${logo}</div>
+<div class="top"><div>${logo}</div><div class="no">Số phiếu: ${esc(String(no))}</div></div>
 <h2>THÔNG TIN GIAO HÀNG</h2>
-<p><b>Tên khách hàng:</b> ${esc(o.buyer)}</p>
+<div class="section">
+<h3>Người gửi</h3>
+<p><b>Họ tên:</b> Anh Đức</p>
+<p><b>Số điện thoại:</b> 035 4911009</p>
+</div>
+<div class="section">
+<h3>Người nhận</h3>
+<p><b>Họ tên:</b> ${esc(o.buyer)}</p>
 <p><b>Số điện thoại:</b> ${esc(o.phone||o.info||'')}</p>
 <p><b>Địa chỉ:</b> ${esc(o.address||'')}</p>
+</div>
 ${o.note?`<p><b>Ghi chú:</b> ${esc(o.note)}</p>`:''}
-<div class="storeline">${storeName} — Phiếu số ${esc(String(o.no||o.id))}</div>
+<div class="storeline">${storeName}</div>
 </div></body></html>`;
 }
 function printDeliveryInfo(id){let o=db.orders.find(x=>x.id===id);if(!o)return;let w=window.open('','_blank');w.document.write(deliveryInfoHTML(o));w.document.close();w.onload=()=>w.print()}
